@@ -1,26 +1,14 @@
 """
-   Copyright 2017 Neil Slater
+   Copyright 2019 Makarand Deshpande
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+   https://opensource.org/licenses/MIT
 """
 
-import numpy as np
 import random
-from itertools import groupby
 import pickle
 
 
-class TicTacToeGame:
+class TTTGame:
     def __init__(self):
         self.state = "         "
         self.player = "X"
@@ -75,7 +63,7 @@ class TicTacToeGame:
                 winner = "X"
             elif line_state == "OOO":
                 winner = "O"
-        return winneir
+        return winner
 
     def __valid_move(self, next_state):
         allowed_moves = self.allowed_moves()
@@ -90,9 +78,10 @@ class TicTacToeGame:
         print("     {} | {} | {}".format(s[3], s[4], s[5]))
         print("    -----------")
         print("     {} | {} | {}".format(s[6], s[7], s[8]))
+        print("    -------------\n\n")
 
 
-class Agent:
+class RLTicTacToeAgent:
     def __init__(self, game_class, epsilon=0.1, alpha=0.5, value_player="X"):
         self.V = dict()
         self.NewGame = game_class
@@ -115,7 +104,7 @@ class Agent:
 
     def learn_from_move(self, game, move):
         game.make_move(move)
-        r = self.__reward(game)
+        r = self.get_reward(game)
         td_target = r
         next_state_value = 0.0
         selected_next_move = None
@@ -181,7 +170,7 @@ class Agent:
                 move = self.play_select_move(game)
                 game.make_move(move)
             else:
-                move = self.__request_human_move(game)
+                move = self.get_human_move(game)
                 game.make_move(move)
             t += 1
 
@@ -198,15 +187,6 @@ class Agent:
         # After training, this makes action selection random from equally-good choices
         for k in self.V.keys():
             self.V[k] = round(self.V[k], 1)
-
-    def save_v_table(self):
-        with open("state_values.csv", "w", newline="") as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(["State", "Value"])
-            all_states = list(self.V.keys())
-            all_states.sort()
-            for state in all_states:
-                writer.writerow([state, self.V[state]])
 
     def __state_values(self, game_states):
         return dict((state, self.state_value(state)) for state in game_states)
@@ -228,7 +208,7 @@ class Agent:
     def __random_V(self, state_values):
         return random.choice(list(state_values.keys()))
 
-    def __reward(self, game):
+    def get_reward(self, game: TTTGame):
         if game.winner == self.value_player:
             return 1.0
         elif game.winner:
@@ -236,7 +216,63 @@ class Agent:
         else:
             return 0.0
 
-    def __request_human_move(self, game):
+    def play_move(self, game: TTTGame):
+        legal_states = self.__state_values(game.allowed_moves())
+        if game.player == self.value_player:
+            return self.__argmax_V(legal_states)
+        else:
+            return self.__argmin_V(legal_states)
+
+    def demo(self):
+        game: TTTGame = self.NewGame()
+        t = 0
+
+        while game.game_in_progress():
+            move = self.play_move(game)
+            game.move(move)
+
+            t += 1
+
+        if game.winner:
+            return game.winner
+        else:
+            return "-"
+
+    def human_game(self, agent="X"):
+
+        game: TTTGame = self.NewGame()
+
+        t = 0
+
+        while game.playable():
+            print('Turn {}'.format(t))
+            game.print_board()
+            if game.player == agent:
+                move = self.play_move(game)
+                game.make_move(move)
+            else:
+                move = self.get_human_move(game)
+                game.make_move(move)
+            t += 1
+
+        game.print_board()
+        if game.winner:
+            print("\n{} is the winner!".format(game.winner))
+            return game.winner
+        print("\nIt's a draw!")
+        return "-"
+
+    def save_model(self, name="primary_model"):
+        file_name = "models/" + name + ".pkl"
+        with open(file_name, "wb") as f:
+            pickle.dump(self.V, f, pickle.HIGHEST_PROTOCOL)
+        return file_name
+
+    def load_model(self, name="primary_model"):
+        with open("models/" + name + ".pkl", "rb") as f:
+            self.V = pickle.load(f)
+
+    def get_human_move(self, game: TTTGame):
         allowed_moves = [i + 1 for i in range(9) if game.state[i] == " "]
         human_move = None
         while not human_move:
@@ -248,84 +284,3 @@ class Agent:
             if any([i == idx for i in allowed_moves]):
                 human_move = game.state[: idx - 1] + game.player + game.state[idx:]
         return human_move
-
-
-def demo_game_stats(agent):
-    results = [agent.demo_game() for i in range(10000)]
-    game_stats = {k: results.count(k) / 100 for k in ["X", "O", "-"]}
-    print("    percentage results: {}".format(game_stats))
-
-
-if __name__ == "__main__":
-    agent = Agent(TicTacToeGame, epsilon=0.2, alpha=1.0)
-    agent.load_model("3x315lmodel0.2eps")
-    # print("Before learning:")
-
-    # agent.learn_game(1000)
-    # print("1000 learning games:")
-
-    # agent.learn_game(4000)
-    # print("5000 learning games:")
-
-    # agent.learn_game(5000)
-    # print("10000 learning games:")
-
-    # agent.learn_game(10000)
-    # print("20000 learning games:")
-
-    # agent.learn_game(10000)
-    # print("30000 learning games:")
-
-    # agent.learn_game(20000)
-    # print("50000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("100000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("150000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("200000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("250000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("300000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("350000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("400000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("450000 learning games:")
-
-    # agent.learn_game(50000)
-    # print("500000 learning games:")
-    demo_game_stats(agent)
-
-    # agent.learn_game(100000)
-    # print("600000 learning games:")
-    # demo_game_stats(agent)
-
-    # agent.learn_game(200000)
-    # print("800000 learning games:")
-    # demo_game_stats(agent)
-
-    # agent.learn_game(200000)
-    # print("1000000 learning games:")
-    # demo_game_stats(agent)
-
-    # agent.learn_game(500000)
-    # print("1500000 learning games:")
-    # demo_game_stats(agent)
-
-    agent.save_model(name="3x315lmodel0.2eps")
-
-    agent.interactive_game(agent_player="O")
-
-    # agent.round_V()
-    # agent.save_v_table()
