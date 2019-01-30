@@ -22,6 +22,6 @@ model will be saved inside models folder with provided name using pickle dump
 `python3 run.py play --model=10k_episodes`
 
 ### Check additional options with
-`python3 run.py train --help`
+`python3 run.py train --help` or
 `python3 run.py play --help`
 
