@@ -245,7 +245,7 @@ class RLTicTacToeAgent:
         t = 0
 
         while game.playable():
-            print('Turn {}'.format(t))
+            print("Turn {}".format(t))
             game.print_board()
             if game.player == agent:
                 move = self.play_move(game)
