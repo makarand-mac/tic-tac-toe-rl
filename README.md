@@ -23,5 +23,5 @@ model will be saved inside models folder with provided name using pickle dump
 
 ### Check additional options with
 `python3 run.py train --help`
-`python3 run.py play --help
+`python3 run.py play --help`
 
