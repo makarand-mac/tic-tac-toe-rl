@@ -1,3 +1,2 @@
-pickle
 numpy
 click
