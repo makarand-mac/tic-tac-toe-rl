@@ -22,10 +22,16 @@ def train(episodes, alpha, epsilon, save):
 
 @click.command()
 @click.option("--model", default="primary_model", help="Model to use")
-def play(model):
+@click.option("--first", default=False, help='Player goes first')
+def play(model, first):
     agent = RLTicTacToeAgent(TTTGame)
     agent.load_model(model)
-    agent.human_game()
+
+    if first:
+        pl = 'O'
+    else:
+        pl = 'X'
+    agent.human_game(agent=pl)
 
 
 cli.add_command(train)

@@ -3,7 +3,7 @@ Tic Tac Toe playing RL agent in Python
 
 ## Installing the dependency
 - Activate virtualenv (optional)
-- `pip install -r requirements.txt`
+- `python3 -m pip install -r requirements.txt`
 
 ## Training the agent
 
